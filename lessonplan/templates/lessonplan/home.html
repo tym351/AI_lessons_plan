@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教案系统首页</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(120deg, #f6d365 0%, #fda085 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18);
+            padding: 48px 36px 36px 36px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 32px;
+            color: #f76b1c;
+            font-size: 2.2rem;
+            letter-spacing: 2px;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            margin: 16px 0;
+            padding: 14px 0;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #fda085 0%, #f6d365 100%);
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: box-shadow 0.2s, transform 0.2s;
+            box-shadow: 0 2px 8px rgba(253, 160, 133, 0.12);
+        }
+        .btn:hover {
+            box-shadow: 0 4px 16px rgba(253, 160, 133, 0.18);
+            transform: translateY(-2px) scale(1.03);
+        }
+        .footer {
+            margin-top: 32px;
+            color: #aaa;
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>教案系统</h1>
+        <a href="/admin/login/" class="btn">登录</a>
+        <a href="/list/" class="btn">管理教案</a>
+        <a href="/generate/" class="btn">生成教案</a>
+        <div class="footer">© 2025 教案系统</div>
+    </div>
+</body>
+</html>

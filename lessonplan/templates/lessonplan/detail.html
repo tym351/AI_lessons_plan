@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ plan.title }} - 教案详情</title>
+    <style>
+        body { background: linear-gradient(120deg, #f6d365 0%, #fda085 100%); font-family: 'Segoe UI', 'PingFang SC', Arial, sans-serif; min-height: 100vh; margin: 0; }
+        .container { max-width: 760px; margin: 48px auto; background: #fff; border-radius: 18px; box-shadow: 0 8px 32px 0 rgba(31,38,135,0.12); padding: 44px 38px 32px 38px; }
+        h2 { color: #f76b1c; margin-bottom: 18px; font-size: 2rem; letter-spacing: 1px; }
+        .tab-bar { margin-bottom: 28px; text-align: right; }
+        .tab-bar a { text-decoration: none; color: #f76b1c; padding: 8px 22px; border-radius: 16px; margin-left: 8px; font-weight: bold; font-size: 1.08rem; transition: background 0.2s, color 0.2s; }
+        .tab-bar a.active { background: #f76b1c; color: #fff; }
+        .card { background: #f9fbe7; border-radius: 12px; margin-bottom: 22px; box-shadow: 0 2px 8px rgba(253,160,133,0.06); padding: 22px 24px 16px 24px; }
+        .field-label { color: #f76b1c; font-weight: bold; font-size: 1.13rem; margin-bottom: 8px; letter-spacing: 1px; }
+        .field-content { font-size: 1.08rem; color: #333; line-height: 1.8; }
+        .btn-bar { margin-top: 32px; text-align: right; }
+        .btn { background: linear-gradient(90deg, #fda085 0%, #f6d365 100%); color: #fff; border: none; border-radius: 8px; padding: 10px 28px; font-size: 1.08rem; font-weight: bold; cursor: pointer; text-decoration: none; margin-left: 8px; box-shadow: 0 2px 8px rgba(253,160,133,0.08); transition: box-shadow 0.2s, background 0.2s; }
+        .btn:hover { opacity: 1; box-shadow: 0 4px 16px rgba(253,160,133,0.18); background: linear-gradient(90deg, #f6d365 0%, #fda085 100%); }
+        @media (max-width: 600px) {
+            .container { padding: 18px 4vw; }
+            .card { padding: 14px 8px 10px 8px; }
+            h2 { font-size: 1.2rem; }
+            .tab-bar { font-size: 0.98rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>{{ plan.title }}</h2>
+    <div class="tab-bar">
+        <a href="/detail/{{ plan.id }}/" class="active">HTML视图</a>
+        <a href="/detail/{{ plan.id }}?view=markdown">Markdown视图</a>
+    </div>
+    <div class="card">
+        <div class="field-label">授课时长</div>
+        <div class="field-content">{{ plan.duration }} 分钟</div>
+    </div>
+    <div class="card">
+        <div class="field-label">教学目标</div>
+        <div class="field-content">{{ objectives_html|safe }}</div>
+    </div>
+    <div class="card">
+        <div class="field-label">教学重点</div>
+        <div class="field-content">{{ key_points_html|safe }}</div>
+    </div>
+    <div class="card">
+        <div class="field-label">教学难点</div>
+        <div class="field-content">{{ difficult_points_html|safe }}</div>
+    </div>
+    <div class="card">
+        <div class="field-label">课程内容</div>
+        <div class="field-content">{{ content_html|safe }}</div>
+    </div>
+    <div class="card">
+        <div class="field-label">思政点</div>
+        <div class="field-content">{{ ideological_points_html|safe }}</div>
+    </div>
+    <div class="btn-bar">
+        <button class="btn" id="reflect-btn" type="button">AI教学反思</button>
+        <a href="/edit/{{ plan.id }}/" class="btn">编辑</a>
+        <a href="/list/" class="btn">返回列表</a>
+    </div>
+</div>
+<script>
+    let reflectModal = null;
+    document.getElementById('reflect-btn').onclick = function() {
+        const btn = this;
+        btn.disabled = true;
+        btn.textContent = 'AI分析中...';
+        showReflectionModal('AI正在分析教案，请稍候...', true);
+        fetch('/reflect/{{ plan.id }}/', {method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}})
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.textContent = 'AI教学反思';
+                if(data.success) {
+                    showReflectionModal(data.reflection, false);
+                } else {
+                    showReflectionModal(data.msg || 'AI反思失败', false);
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.textContent = 'AI教学反思';
+                showReflectionModal('请求失败: ' + err.message, false);
+            });
+    };
+    function showReflectionModal(content, loading) {
+        if(reflectModal) reflectModal.remove();
+        reflectModal = document.createElement('div');
+        reflectModal.style = 'position:fixed;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.18);z-index:9999;display:flex;align-items:center;justify-content:center;';
+        reflectModal.innerHTML = `<div style=\"background:#fff;border-radius:14px;max-width:520px;width:90vw;padding:32px 28px;box-shadow:0 8px 32px 0 rgba(31,38,135,0.18);font-size:1.08rem;line-height:1.8;color:#333;position:relative;display:flex;flex-direction:column;max-height:80vh;\">
+            <div style='font-weight:bold;color:#f76b1c;font-size:1.18rem;margin-bottom:18px;'>AI 教学反思</div>
+            <div id='reflect-content' style='flex:1;overflow:auto;white-space:pre-wrap;max-height:48vh;'>${loading ? "<div style='text-align:center;margin:32px 0;'><div class='loader'></div><div style='color:#aaa;margin-top:12px;'>AI分析中，请稍候...</div></div>" : content.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+            <button style='position:absolute;top:12px;right:18px;background:#f76b1c;color:#fff;border:none;border-radius:6px;padding:4px 16px;cursor:pointer;font-size:1rem;' onclick='this.closest("div").parentNode.remove()'>关闭</button>
+        </div>`;
+        document.body.appendChild(reflectModal);
+        // loader样式
+        if(loading) {
+            let style = document.createElement('style');
+            style.innerHTML = `.loader{border:4px solid #f3f3f3;border-top:4px solid #f76b1c;border-radius:50%;width:36px;height:36px;animation:spin 1s linear infinite;}@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}`;
+            document.head.appendChild(style);
+        }
+    }
+</script>
+</body>
+</html>

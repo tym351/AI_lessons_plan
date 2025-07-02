@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分步AI生成教案</title>
+    <style>
+        body { background: #f6f7fb; font-family: 'Segoe UI', 'PingFang SC', Arial, sans-serif; }
+        .container { max-width: 520px; margin: 48px auto; background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); padding: 36px 32px; }
+        h2 { color: #f76b1c; margin-bottom: 24px; }
+        label { display: block; margin: 16px 0 6px; color: #333; }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #eee; border-radius: 6px; font-size: 1rem; }
+        textarea { min-height: 60px; }
+        .btn { margin-top: 18px; width: 100%; background: linear-gradient(90deg, #fda085 0%, #f6d365 100%); color: #fff; border: none; border-radius: 8px; padding: 14px 0; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
+        .btn:hover { opacity: 0.95; }
+        .ai-btn { background: #4caf50; margin-bottom: 8px; }
+        .ai-btn:hover { background: #43a047; }
+        .loading { color: #f76b1c; margin: 10px 0; }
+        .step-label { font-weight: bold; color: #f76b1c; margin-top: 18px; }
+    </style>
+    <script>
+    function aiStep(step) {
+        const theme = document.getElementById('theme').value;
+        const duration = document.getElementById('duration').value;
+        const objectives = document.getElementById('objectives').value;
+        const key_points = document.getElementById('key_points').value;
+        const difficult_points = document.getElementById('difficult_points').value;
+        const content = document.getElementById('content').value;
+        let postData = `theme=${encodeURIComponent(theme)}&duration=${encodeURIComponent(duration)}&ai_only=1&step=${step}`;
+        if (step === 'key_difficult') postData += `&objectives=${encodeURIComponent(objectives)}`;
+        if (step === 'content') postData += `&objectives=${encodeURIComponent(objectives)}&key_points=${encodeURIComponent(key_points)}&difficult_points=${encodeURIComponent(difficult_points)}`;
+        if (step === 'ideological') postData += `&objectives=${encodeURIComponent(objectives)}&key_points=${encodeURIComponent(key_points)}&difficult_points=${encodeURIComponent(difficult_points)}&content=${encodeURIComponent(content)}`;
+        const btn = document.getElementById('ai-' + step + '-btn');
+        btn.disabled = true;
+        btn.innerText = 'AI生成中...';
+        document.getElementById('ai-loading').style.display = 'block';
+        fetch('/generate/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: postData
+        })
+        .then(res => res.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerText = btn.getAttribute('data-label');
+            document.getElementById('ai-loading').style.display = 'none';
+            if (data.success) {
+                if (step === 'objectives') document.getElementById('objectives').value = data.objectives || '';
+                if (step === 'key_difficult') {
+                    document.getElementById('key_points').value = data.key_points || '';
+                    document.getElementById('difficult_points').value = data.difficult_points || '';
+                }
+                if (step === 'content') document.getElementById('content').value = data.content || '';
+                if (step === 'ideological') document.getElementById('ideological').value = data.ideological_points || '';
+            } else {
+                alert('生成失败: ' + (data.msg || '未知错误'));
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerText = btn.getAttribute('data-label');
+            document.getElementById('ai-loading').style.display = 'none';
+            alert('AI生成失败: ' + err.message);
+        });
+    }
+    </script>
+</head>
+<body>
+<div class="container">
+    <h2>生成教案</h2>
+    <form method="post">
+        {% csrf_token %}
+        <label for="theme">教学主题</label>
+        <input type="text" id="theme" name="theme" required value="{{ plan.title|default:'' }}">
+        <label for="duration">授课时长（分钟）</label>
+        <input type="number" id="duration" name="duration" min="1" required value="{{ plan.duration|default:'' }}">
+        <div class="step-label">1. 教学目标</div>
+        <button type="button" class="btn ai-btn" id="ai-objectives-btn" data-label="AI生成教学目标" onclick="aiStep('objectives')">AI生成教学目标</button>
+        <textarea id="objectives" name="objectives" placeholder="每行一个目标">{{ plan.objectives|default:'' }}</textarea>
+        <div class="step-label">2. 教学重点/难点</div>
+        <button type="button" class="btn ai-btn" id="ai-key_difficult-btn" data-label="AI生成重点/难点" onclick="aiStep('key_difficult')">AI生成重点/难点</button>
+        <textarea id="key_points" name="key_points" placeholder="教学重点">{{ plan.key_points|default:'' }}</textarea>
+        <textarea id="difficult_points" name="difficult_points" placeholder="教学难点">{{ plan.difficult_points|default:'' }}</textarea>
+        <div class="step-label">3. 课程内容</div>
+        <button type="button" class="btn ai-btn" id="ai-content-btn" data-label="AI生成课程内容" onclick="aiStep('content')">AI生成课程内容</button>
+        <textarea id="content" name="content">{{ plan.content|default:'' }}</textarea>
+        <div class="step-label">4. 思政点</div>
+        <button type="button" class="btn ai-btn" id="ai-ideological-btn" data-label="AI生成思政点" onclick="aiStep('ideological')">AI生成思政点</button>
+        <textarea id="ideological" name="ideological">{{ plan.ideological_points|default:'' }}</textarea>
+        <div id="ai-loading" class="loading" style="display:none;">AI生成中，请稍候...</div>
+        <button class="btn" type="submit">保存教案</button>
+    </form>
+    <div id="save-success" style="display:none; margin-top:24px; background:#e8f5e9; color:#388e3c; border-radius:8px; padding:18px 16px; text-align:center; font-size:1.1rem;">
+        教案已成功保存！<br>
+        <a href="/list/" style="color:#f76b1c; text-decoration:underline;">返回教案列表</a> 或 <a id="view-detail-link" href="#" style="color:#4caf50; text-decoration:underline;">查看本教案详情</a>
+    </div>
+    <a href="/" class="btn" style="background:#f76b1c; margin-top:32px; text-align:center; display:block;">返回主页</a>
+    <script>
+    document.querySelector('form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const form = this;
+        const formData = new FormData(form);
+        let url = window.location.pathname.includes('/edit/') ? window.location.pathname : '/generate/';
+        fetch(url, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('save-success').style.display = 'block';
+                document.getElementById('view-detail-link').href = '/detail/' + data.id + '/';
+                form.style.display = 'none';
+            } else {
+                alert('保存失败: ' + (data.msg || '未知错误'));
+            }
+        })
+        .catch(err => {
+            alert('保存失败: ' + err.message);
+        });
+    });
+    </script>
+</div>
+</body>
+</html>
